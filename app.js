@@ -2232,13 +2232,6 @@ initDataListener();
 
 
 
-// أضف هذا الكود داخل الـ Script
-document.querySelector('.d-flex.align-items-center.bg-white.p-2').style.cursor = 'pointer';
-document.querySelector('.d-flex.align-items-center.bg-white.p-2').onclick = () => {
-    showToast("جاري تحديث البيانات...", "info");
-    location.reload();
-};
-
 
 // إضافة ميزة السحب للتحديث
 let touchStart = 0;
