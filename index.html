@@ -86,21 +86,6 @@
 
         <hr class="mx-3 my-2 opacity-25 text-white">
 
-
-        <button onclick="showView('accounts', this)" id="btn-view-accounts">
-            <i class="bi bi-bank"></i> الحسابات
-        </button>
-
-        <button onclick="showView('commissionReports', this)" id="btn-view-commissionReports">
-            <i class="bi bi-cash-coin"></i> تقرير العمولات
-        </button>
-
-        <button onclick="showView('match', this)" id="btn-view-match">
-            <i class="bi bi-calculator-fill"></i> مطابقة الدولار
-        </button>
-
-        <hr class="mx-3 my-2 opacity-25 text-white">
-
         <button onclick="switchSystem('exchange', this)" class="active-system" id="btn-sys-exchange">
             <i class="bi bi-arrow-left-right"></i> نظام التصريف
         </button>
@@ -120,6 +105,45 @@
         <button onclick="cycleTheme()" class="theme-btn">
             <i class="bi bi-palette-fill"></i> تغيير الثيم التفاعلي
         </button>
+
+        <div class="card-custom control-panel-match">
+
+        <h6 class="fw-bold mb-3">
+            <i class="bi bi-sliders me-2 text-primary"></i>
+            أدوات المطابقة
+        </h6>
+    
+        <!-- الأزرار الجديدة -->
+        <div class="row g-2 mb-3">
+    
+            <div class="col-4">
+                <button class="btn btn-success w-100 py-3 fw-bold"
+                        onclick="showView('accounts', document.getElementById('btn-view-accounts'))">
+                            <i class="bi bi-bank2 d-block fs-4 mb-1"></i>
+                    الحسابات
+                </button>
+            </div>
+    
+            <div class="col-4">
+                <button class="btn btn-info w-100 py-3 fw-bold"
+                        onclick="showView('commissionReports', document.getElementById('btn-view-commissionReports'))">
+                        <i class="bi bi-cash-stack d-block fs-4 mb-1"></i>
+                    العمولات
+                </button>
+            </div>
+    
+            <div class="col-4">
+                <button class="btn btn-primary w-100 py-3 fw-bold"
+                        onclick="showView('match', document.getElementById('btn-view-match'))">
+                        <i class="bi bi-calculator-fill d-block fs-4 mb-1"></i>
+                    المطابقة
+                </button>
+            </div>
+    
+        </div>
+
+    <!-- أزرار الزيادة والنقصان -->
+    <div class="mb-3">
 
         <div class="d-flex gap-2 px-3">
             <button onclick="increaseTableFont()" class="flex-fill">
