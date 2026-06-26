@@ -36,16 +36,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-    <style>
-        .sidebar .d-flex button {
-            height: 48px;
-            padding: 0;
-        }
-        
-        .sidebar .d-flex button i {
-            font-size: 1.2rem;
-        }
-    </style>
 </head>
 
 <body data-theme="light">
@@ -99,34 +89,39 @@
 
         <hr class="mx-3 my-2 opacity-25 text-white">
 
+        <div class="d-flex justify-content-center gap-2 px-3">
+
+            <button onclick="showView('accounts', this)"
+                    id="btn-view-accounts"
+                    class="sidebar-icon-btn"
+                    title="الحسابات">
+                <i class="bi bi-bank"></i>
+            </button>
+
+            <button onclick="showView('commissionReports', this)"
+                    id="btn-view-commissionReports"
+                    class="sidebar-icon-btn"
+                    title="تقرير العمولات">
+                <i class="bi bi-cash-coin"></i>
+            </button>
+
+            <button onclick="showView('match', this)"
+                    id="btn-view-match"
+                    class="sidebar-icon-btn"
+                    title="مطابقة الدولار">
+                <i class="bi bi-calculator-fill"></i>
+            </button>
+
+        </div>
+
+        <hr class="mx-3 my-2 opacity-25 text-white">
+
         <button onclick="switchSystem('exchange', this)" class="active-system" id="btn-sys-exchange">
             <i class="bi bi-arrow-left-right"></i> نظام التصريف
         </button>
         <button onclick="switchSystem('cash', this)" id="btn-sys-cash">
             <i class="bi bi-wallet2"></i> نظام الحركات المالية
         </button>
-
-        <hr class="mx-3 my-2 opacity-25 text-white">
-
-                <div class="d-flex gap-2 px-3 my-2">
-            <button onclick="showView('reports', this)"
-                id="btn-view-reports"
-                class="flex-fill d-flex justify-content-center align-items-center">
-                <i class="bi bi-pie-chart fs-5"></i>
-            </button>
-        
-            <button onclick="showView('commissionReports', this)"
-                id="btn-view-commissionReports"
-                class="flex-fill d-flex justify-content-center align-items-center">
-                <i class="bi bi-cash-coin fs-5"></i>
-            </button>
-        
-            <button onclick="showView('match', this)"
-                id="btn-view-match"
-                class="flex-fill d-flex justify-content-center align-items-center">
-                <i class="bi bi-calculator-fill fs-5"></i>
-            </button>
-        </div>
         
         <hr class="mx-3 my-2 opacity-25 text-white">
 
