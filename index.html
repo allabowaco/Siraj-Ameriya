@@ -36,6 +36,16 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    <style>
+        .sidebar .d-flex button {
+            height: 48px;
+            padding: 0;
+        }
+        
+        .sidebar .d-flex button i {
+            font-size: 1.2rem;
+        }
+    </style>
 </head>
 
 <body data-theme="light">
@@ -98,6 +108,28 @@
 
         <hr class="mx-3 my-2 opacity-25 text-white">
 
+                <div class="d-flex gap-2 px-3 my-2">
+            <button onclick="showView('reports', this)"
+                id="btn-view-reports"
+                class="flex-fill d-flex justify-content-center align-items-center">
+                <i class="bi bi-pie-chart fs-5"></i>
+            </button>
+        
+            <button onclick="showView('commissionReports', this)"
+                id="btn-view-commissionReports"
+                class="flex-fill d-flex justify-content-center align-items-center">
+                <i class="bi bi-cash-coin fs-5"></i>
+            </button>
+        
+            <button onclick="showView('match', this)"
+                id="btn-view-match"
+                class="flex-fill d-flex justify-content-center align-items-center">
+                <i class="bi bi-calculator-fill fs-5"></i>
+            </button>
+        </div>
+        
+        <hr class="mx-3 my-2 opacity-25 text-white">
+
         <button class="text-danger border border-danger border-opacity-10 mx-3 rounded-3" id="btnDeleteRegister"
             style="background: rgba(220, 53, 69, 0.05); font-weight: 700;">
             <i class="bi bi-trash3-fill"></i> مسح السجل الكامل
@@ -110,40 +142,6 @@
         </button>
 
         <div class="card-custom control-panel-match">
-
-        <h6 class="fw-bold mb-3">
-            <i class="bi bi-sliders me-2 text-primary"></i>
-            أدوات المطابقة
-        </h6>
-    
-        <!-- الأزرار الجديدة -->
-        <div class="row g-2 mb-3">
-    
-            <div class="col-4">
-                <button class="btn btn-success w-100 py-3 fw-bold"
-                        onclick="showView('accounts', document.getElementById('btn-view-accounts'))">
-                            <i class="bi bi-bank2 d-block fs-4 mb-1"></i>
-                    الحسابات
-                </button>
-            </div>
-    
-            <div class="col-4">
-                <button class="btn btn-info w-100 py-3 fw-bold"
-                        onclick="showView('commissionReports', document.getElementById('btn-view-commissionReports'))">
-                        <i class="bi bi-cash-stack d-block fs-4 mb-1"></i>
-                    العمولات
-                </button>
-            </div>
-    
-            <div class="col-4">
-                <button class="btn btn-primary w-100 py-3 fw-bold"
-                        onclick="showView('match', document.getElementById('btn-view-match'))">
-                        <i class="bi bi-calculator-fill d-block fs-4 mb-1"></i>
-                    المطابقة
-                </button>
-            </div>
-    
-        </div>
 
     <!-- أزرار الزيادة والنقصان -->
     <div class="mb-3">
