@@ -7,12 +7,15 @@ import {
   addDoc,
   onSnapshot,
   query,
+  where,
   orderBy,
   deleteDoc,
   doc,
   updateDoc,
   getDocs,
-  setDoc
+  getDoc,
+  setDoc,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // Firebase Configuration
@@ -43,10 +46,13 @@ export {
   addDoc,
   onSnapshot,
   query,
+  where,
   orderBy,
   deleteDoc,
   doc,
   updateDoc,
   getDocs,
-  setDoc
+  getDoc,
+  setDoc,
+  serverTimestamp
 };
