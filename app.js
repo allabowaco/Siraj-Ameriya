@@ -5,12 +5,15 @@ import {
     addDoc,
     onSnapshot,
     query,
+    where,
     orderBy,
     deleteDoc,
     doc,
     updateDoc,
     getDocs,
-    setDoc
+    getDoc,
+    setDoc,
+    serverTimestamp
 } from "./firebase-config.js";
 
 import {
@@ -35,6 +38,10 @@ const SYSTEM_SETTINGS_COLLECTION = 'system_settings';
 const SYSTEM_BALANCE_LOGS_COLLECTION = 'system_balance_logs';
 const MAX_BALANCE_LOGS = 10;
 
+// ==========================================
+// التقارير اليومية
+// ==========================================
+const DAILY_REPORTS_COLLECTION = 'daily_reports';
 
 const sidebar = document.getElementById('sidebar');
 const overlay = document.getElementById('overlay');
@@ -157,6 +164,7 @@ window.showView = async (view, btn) => {
     const viewNames = {
         home: 'الرئيسية',
         reports: 'التحليلات والتقارير',
+        dailyReports: 'التقارير اليومية',
         match: 'مطابقة الدولار ⚖️',
         accounts: 'حسابات العمولات',
         commissionReports: 'تقرير العمولات'
@@ -195,6 +203,7 @@ window.showView = async (view, btn) => {
     // الصفحات التي نريد إخفاء الأزرار بها
     const hideNavButtonsViews = [
         'match',
+        'dailyReports',
         'accounts',
         'commissionReports'
     ];
@@ -242,11 +251,12 @@ window.showView = async (view, btn) => {
     const deleteBtn =
         document.getElementById('btnDeleteRegister');
 
-    deleteBtn.style.display =
+        deleteBtn.style.display =
         (
             view === 'match' ||
             view === 'accounts' ||
-            view === 'commissionReports'
+            view === 'commissionReports' ||
+            view === 'dailyReports'
         )
             ? 'none'
             : 'block';
@@ -305,11 +315,12 @@ window.showView = async (view, btn) => {
     // الصفحات الطبيعية فقط
     // نرجع التحديد حسب النظام الحالي
     // ==========================================
-    if (
-        view !== 'match' &&
-        view !== 'accounts' &&
-        view !== 'commissionReports'
-    ) {
+        if (
+            view !== 'match' &&
+            view !== 'accounts' &&
+            view !== 'commissionReports' &&
+            view !== 'dailyReports'
+        ) {
 
         const activeSystemBtn =
             document.getElementById(
@@ -327,6 +338,7 @@ window.showView = async (view, btn) => {
     const sections = [
         'formSection',
         'tableSection',
+        'dailyReportsSection',
         'reportsSection',
         'matchSection',
         'accountsSection',
@@ -442,6 +454,19 @@ window.showView = async (view, btn) => {
         ).style.display = 'block';
 
         renderCommissionReport();
+    }
+
+    // ==========================================
+    // صفحة التقارير اليومية
+    // ==========================================
+    else if (view === 'dailyReports') {
+
+        console.log("Open Daily Reports");
+
+        document.getElementById('dailyReportsSection').style.display = 'block';
+
+        await renderDailyReports();
+
     }
 
     // ==========================================
@@ -2062,6 +2087,851 @@ window.confirmDelete = (id) => {
     confirmModal.show();
 };
 
+
+async function buildCashReport() {
+
+    const result = {
+
+        totalProfit: 0,
+        totalExpenses: 0,
+
+        accounts: []
+
+    };
+
+    const accountsMap = {};
+
+    const snapshot = await getDocs(
+        query(
+            collection(db, "cash_movements"),
+            orderBy("timestamp", "asc")
+        )
+    );
+
+    snapshot.forEach(docSnap => {
+
+        const item = docSnap.data();
+
+        const account =
+            item.account || "غير محدد";
+
+        if (!accountsMap[account]) {
+
+            accountsMap[account] = {
+
+                account,
+
+                receive: 0,
+
+                pay: 0
+
+            };
+
+        }
+
+        const amount =
+            parseNumber(item.amount);
+
+        if (
+            item.type === "قبض"
+        ) {
+
+            accountsMap[account].receive += amount;
+
+        }
+
+        else if (
+            item.type === "صرف"
+        ) {
+
+            accountsMap[account].pay += amount;
+
+        }
+
+        else if (
+            item.type === "مصاريف يوميه" ||
+            item.type === "مصاريف يومية"
+        ) {
+
+            result.totalExpenses += amount;
+
+        }
+
+        result.totalProfit +=
+            parseNumber(item.commission);
+
+    });
+
+    result.accounts =
+        Object.values(accountsMap);
+
+    return result;
+
+}
+
+// ==========================================
+// حساب تقرير التصريف
+// ==========================================
+async function buildExchangeReport() {
+
+    const result = {
+
+        totalSales: 0,
+        totalPurchases: 0,
+
+        averageSaleRate: 0,
+        averagePurchaseRate: 0
+
+    };
+
+    let saleRateSum = 0;
+    let purchaseRateSum = 0;
+
+    let saleCount = 0;
+    let purchaseCount = 0;
+
+    const snapshot = await getDocs(
+
+        query(
+
+            collection(db,"exchange_movements"),
+
+            orderBy("timestamp","asc")
+
+        )
+
+    );
+
+    snapshot.forEach(docSnap=>{
+
+        const item = docSnap.data();
+
+        const amount =
+            parseNumber(item.amount);
+
+        const rate =
+            parseFloat(item.rate||0);
+
+        if(item.type==="بيع"){
+
+            result.totalSales += amount;
+
+            saleRateSum += rate;
+
+            saleCount++;
+
+        }
+        else{
+
+            result.totalPurchases += amount;
+
+            purchaseRateSum += rate;
+
+            purchaseCount++;
+
+        }
+
+    });
+
+    result.averageSaleRate =
+        saleCount
+        ? saleRateSum/saleCount
+        :0;
+
+    result.averagePurchaseRate =
+        purchaseCount
+        ? purchaseRateSum/purchaseCount
+        :0;
+
+    return result;
+
+}
+// ==========================================
+// حفظ التقرير اليومي
+// ==========================================
+async function saveDailyReport() {
+
+    try {
+
+        const reportDate = getReportDate();
+
+        const {
+            year,
+            month,
+            day
+        } = getReportDateParts();
+
+        const exchange = await buildExchangeReport();
+
+        const cash = await buildCashReport();
+
+        const reportRef = doc(
+            db,
+            DAILY_REPORTS_COLLECTION,
+            reportDate
+        );
+
+        const old = await getDoc(reportRef);
+
+        if (old.exists()) {
+            return true;
+        }
+
+        // حذف جميع تقارير الأشهر السابقة والإبقاء على الشهر الحالي فقط
+        const allReports = await getDocs(
+            collection(db, DAILY_REPORTS_COLLECTION)
+        );
+
+        const batch = writeBatch(db);
+
+        allReports.forEach((docSnap) => {
+
+            const data = docSnap.data();
+
+            if (
+                Number(data.year) !== Number(year) ||
+                Number(data.month) !== Number(month)
+            ) {
+                batch.delete(docSnap.ref);
+            }
+
+        });
+
+        await batch.commit();
+
+        await setDoc(
+
+            reportRef,
+
+            {
+
+                date: reportDate,
+
+                year,
+                month,
+                day,
+
+                totalProfit: cash.totalProfit,
+
+                totalExpenses: cash.totalExpenses,
+
+                exchange: {
+
+                    totalSales: exchange.totalSales,
+
+                    averageSaleRate: exchange.averageSaleRate,
+
+                    totalPurchases: exchange.totalPurchases,
+
+                    averagePurchaseRate: exchange.averagePurchaseRate
+
+                },
+
+                cashAccounts: cash.accounts,
+
+                createdAt: serverTimestamp()
+
+            }
+
+        );
+
+        return true;
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        return false;
+
+    }
+
+}
+
+async function renderDailyReports() {
+
+    const list = document.getElementById("dailyReportsList");
+
+    const monthProfit =
+        document.getElementById("monthProfit");
+
+    const monthExpenses =
+        document.getElementById("monthExpenses");
+
+    if (!list) return;
+
+    list.innerHTML = `
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary"></div>
+        <div class="mt-3">جاري تحميل التقارير...</div>
+    </div>
+    `;
+
+    try {
+
+        const snapshot = await getDocs(
+            collection(db, DAILY_REPORTS_COLLECTION)
+        );
+
+        const reports = [];
+
+        snapshot.forEach(docSnap => {
+
+            reports.push({
+                id: docSnap.id,
+                ...docSnap.data()
+            });
+
+        });
+
+        reports.sort((a, b) =>
+            new Date(b.date) - new Date(a.date)
+        );
+
+        let totalProfit = 0;
+        let totalExpenses = 0;
+
+        let html = "";
+
+        reports.forEach((item, index) => {
+
+            const sales =
+                Number(item.exchange?.totalSales || 0);
+
+            const purchases =
+                Number(item.exchange?.totalPurchases || 0);
+
+            const profit =
+                Number(item.totalProfit || 0);
+
+            const expenses =
+                Number(item.totalExpenses || 0);
+
+            totalProfit += profit;
+            totalExpenses += expenses;
+
+            html += `
+
+<div class="daily-card"
+onclick="showDailyReport('${item.id}')"
+style="animation-delay:${index*70}ms">
+
+    <div class="daily-card-header">
+
+        <div class="daily-date">
+
+            <i class="bi bi-calendar-event-fill"></i>
+
+            ${item.date}
+
+        </div>
+
+        <div class="daily-open">
+
+            <i class="bi bi-chevron-left"></i>
+
+        </div>
+
+    </div>
+
+    <div class="daily-card-body">
+
+        <div class="daily-item blue">
+
+            <i class="bi bi-graph-up-arrow"></i>
+
+            <span>
+
+                البيع
+
+            </span>
+
+            <strong>
+
+                ${sales.toLocaleString()}
+
+            </strong>
+
+        </div>
+
+        <div class="daily-item orange">
+
+            <i class="bi bi-graph-down-arrow"></i>
+
+            <span>
+
+                الشراء
+
+            </span>
+
+            <strong>
+
+                ${purchases.toLocaleString()}
+
+            </strong>
+
+        </div>
+
+        <div class="daily-item green">
+
+            <i class="bi bi-cash-stack"></i>
+
+            <span>
+
+                الربح
+
+            </span>
+
+            <strong>
+
+                ${profit.toLocaleString()}
+
+            </strong>
+
+        </div>
+
+    </div>
+
+</div>
+
+`;
+
+        });
+
+        if (monthProfit)
+            monthProfit.innerText =
+                (totalProfit - totalExpenses).toLocaleString();
+
+        if (monthExpenses)
+            monthExpenses.innerText =
+                totalExpenses.toLocaleString();
+
+        if (reports.length === 0) {
+
+            list.innerHTML = `
+
+<div class="daily-empty">
+
+<i class="bi bi-calendar-x"></i>
+
+<h4>
+
+لا توجد تقارير محفوظة
+
+</h4>
+
+</div>
+
+`;
+
+            return;
+
+        }
+
+        list.innerHTML = html;
+
+    }
+
+    catch (e) {
+
+        console.error(e);
+
+        list.innerHTML = `
+
+<div class="daily-empty">
+
+<i class="bi bi-exclamation-triangle-fill text-danger"></i>
+
+<h5>
+
+${e.message}
+
+</h5>
+
+</div>
+
+`;
+
+    }
+
+}
+
+window.showDailyReport = async function (id) {
+
+    try {
+
+        const snap = await getDoc(
+            doc(db, DAILY_REPORTS_COLLECTION, id)
+        );
+
+        if (!snap.exists()) {
+
+            showToast("التقرير غير موجود", "danger");
+            return;
+
+        }
+
+        const item = snap.data();
+
+        document.getElementById("dailyReportModal")?.remove();
+
+        let accountsHtml = "";
+
+        (item.cashAccounts || []).forEach(acc => {
+
+            accountsHtml += `
+
+<tr>
+
+    <td>
+
+        <i class="bi bi-wallet2 text-primary me-2"></i>
+
+        ${acc.account}
+
+    </td>
+
+    <td class="text-success fw-bold">
+
+        ${Number(acc.receive || 0).toLocaleString()}
+
+    </td>
+
+    <td class="text-danger fw-bold">
+
+        ${Number(acc.pay || 0).toLocaleString()}
+
+    </td>
+
+</tr>
+
+`;
+
+        });
+
+        if (!accountsHtml) {
+
+            accountsHtml = `
+
+<tr>
+
+<td colspan="3" class="text-center text-muted py-4">
+
+لا توجد حركات مالية
+
+</td>
+
+</tr>
+
+`;
+
+        }
+
+        const modal = document.createElement("div");
+
+        modal.id = "dailyReportModal";
+
+        modal.innerHTML = `
+
+<div class="dailyOverlay">
+
+<div class="dailyWindow">
+
+<div class="dailyHeader">
+
+<div>
+
+<h3>
+
+<i class="bi bi-calendar2-week-fill text-primary"></i>
+
+${item.date}
+
+</h3>
+
+<div class="dailySubtitle">
+
+التقرير المالي اليومي
+
+</div>
+
+</div>
+
+<button class="dailyClose">
+
+<i class="bi bi-x-lg"></i>
+
+</button>
+
+</div>
+
+<div class="dailyCards">
+
+<div class="infoCard sales">
+
+<div class="icon">
+
+<i class="bi bi-graph-up-arrow"></i>
+
+</div>
+
+<div>
+
+<span>إجمالي البيع</span>
+
+<h3>
+
+${Number(item.exchange?.totalSales || 0).toLocaleString()}
+
+</h3>
+
+</div>
+
+</div>
+
+<div class="infoCard purchase">
+
+<div class="icon">
+
+<i class="bi bi-graph-down-arrow"></i>
+
+</div>
+
+<div>
+
+<span>إجمالي الشراء</span>
+
+<h3>
+
+${Number(item.exchange?.totalPurchases || 0).toLocaleString()}
+
+</h3>
+
+</div>
+
+</div>
+
+<div class="infoCard rate">
+
+<div class="icon">
+
+<i class="bi bi-currency-dollar"></i>
+
+</div>
+
+<div>
+
+<span>معدل البيع</span>
+
+<h3>
+
+${Number(item.exchange?.averageSaleRate || 0).toLocaleString()}
+
+</h3>
+
+</div>
+
+</div>
+
+<div class="infoCard rate2">
+
+<div class="icon">
+
+<i class="bi bi-cash-stack"></i>
+
+</div>
+
+<div>
+
+<span>معدل الشراء</span>
+
+<h3>
+
+${Number(item.exchange?.averagePurchaseRate || 0).toLocaleString()}
+
+</h3>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="profitSummary">
+
+<div class="profitCard">
+
+<div>
+
+<span>
+
+الربح الكلي
+
+</span>
+
+<h2>
+
+${Number(item.totalProfit || 0).toLocaleString()}
+
+</h2>
+
+</div>
+
+<i class="bi bi-trophy-fill"></i>
+
+</div>
+
+<div class="expenseCard">
+
+<div>
+
+<span>
+
+المصاريف
+
+</span>
+
+<h2>
+
+${Number(item.totalExpenses || 0).toLocaleString()}
+
+</h2>
+
+</div>
+
+<i class="bi bi-wallet-fill"></i>
+
+</div>
+
+<div class="netCard">
+
+<div>
+
+<span>
+
+صافي الربح
+
+</span>
+
+<h1>
+
+${(
+Number(item.totalProfit || 0)
+-
+Number(item.totalExpenses || 0)
+).toLocaleString()}
+
+</h1>
+
+</div>
+
+<i class="bi bi-stars"></i>
+
+</div>
+
+</div>
+
+<div class="accountsBox">
+
+<div class="accountsTitle">
+
+<i class="bi bi-bank2"></i>
+
+الحركات المالية حسب الحساب
+
+</div>
+
+<div class="table-responsive">
+
+<table class="table align-middle table-hover">
+
+<thead>
+
+<tr>
+
+<th>
+
+الحساب
+
+</th>
+
+<th class="text-success">
+
+القبض
+
+</th>
+
+<th class="text-danger">
+
+الصرف
+
+</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+${accountsHtml}
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+`;
+
+        document.body.appendChild(modal);
+
+        modal.querySelector(".dailyClose").onclick = () => {
+
+            modal.remove();
+
+        };
+
+        modal.onclick = function (e) {
+
+            if (e.target.classList.contains("dailyOverlay")) {
+
+                modal.remove();
+
+            }
+
+        };
+
+        document.addEventListener("keydown", function esc(ev) {
+
+            if (ev.key === "Escape") {
+
+                modal.remove();
+
+                document.removeEventListener("keydown", esc);
+
+            }
+
+        });
+
+    }
+
+    catch (e) {
+
+        console.error(e);
+
+        showToast(e.message, "danger");
+
+    }
+
+};
+
 document.getElementById('btnDeleteRegister').onclick = () => {
     document.getElementById('modalTitle').innerText = "تنبيه أمان صارم!";
     const systemName = currentSystem === 'exchange' ? 'نظام التصريف' : 'نظام الحركات المالية';
@@ -2077,9 +2947,16 @@ document.getElementById('btnDeleteRegister').onclick = () => {
         try {
             const colName = currentSystem === 'exchange' ? 'exchange_movements' : 'cash_movements';
             const colRef = collection(db, colName);
+
             const qSnapshot = await getDocs(colRef);
 
-            const deletePromises = qSnapshot.docs.map(docSnapshot => deleteDoc(docSnapshot.ref));
+            await saveDailyReport();
+
+            const deletePromises =
+                qSnapshot.docs.map(docSnapshot =>
+                    deleteDoc(docSnapshot.ref)
+                );
+
             await Promise.all(deletePromises);
 
             playSuccessSound();
@@ -3736,3 +4613,89 @@ const commissionSlider = document.getElementById('commissionSlider');
         document.getElementById('amount').blur();
     });
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function getReportDate() {
+
+    const d = new Date();
+
+    const year = d.getFullYear();
+
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+
+    const day = String(d.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+
+}
+
+function getReportDateParts() {
+
+    const d = new Date();
+
+    return {
+
+        year: d.getFullYear(),
+
+        month: d.getMonth() + 1,
+
+        day: d.getDate()
+
+    };
+
+}
+
