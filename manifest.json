@@ -1,6 +1,6 @@
 {
-  "name": "سِراج عامرية",
-  "short_name": "سِراج عامرية",
+  "name": "Google Chat",
+  "short_name": "Google Chat",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",
