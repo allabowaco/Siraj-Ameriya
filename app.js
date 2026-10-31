@@ -37,7 +37,7 @@ let tableFontSize = 16;
 // أرشفة الحركات بعد نجاح حفظها في Firebase.
 // ملاحظة: الرمز هنا ظاهر في ملفات الموقع؛ هو حاجز بسيط وليس مصادقة سرية حقيقية.
 const SIRAJ_ARCHIVE_URL = 'https://signup.ebdaalkhuta.com/Home/SaveMovement';
-const SIRAJ_ARCHIVE_KEY = 'REPLACE_WITH_YOUR_LONG_ARCHIVE_KEY';
+const SIRAJ_ARCHIVE_KEY = 'T7DnQhKC0DyCuLf79cinQD28BIrEpqKg4a92XNOwO0e9fKrk';
 
 async function sendMovementToExcel(collectionName, documentId, operation, data) {
     const message = {
