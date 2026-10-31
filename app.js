@@ -34,6 +34,40 @@ let initialLoadCompleted = false;
 let companyAccounts = [];
 let tableFontSize = 16;
 
+// أرشفة الحركات بعد نجاح حفظها في Firebase.
+// ملاحظة: الرمز هنا ظاهر في ملفات الموقع؛ هو حاجز بسيط وليس مصادقة سرية حقيقية.
+const SIRAJ_ARCHIVE_URL = 'https://signup.ebdaalkhuta.com/Home/SaveMovement';
+const SIRAJ_ARCHIVE_KEY = 'REPLACE_WITH_YOUR_LONG_ARCHIVE_KEY';
+
+async function sendMovementToExcel(collectionName, documentId, operation, data) {
+    const message = {
+        key: SIRAJ_ARCHIVE_KEY,
+        eventId: crypto.randomUUID(),
+        collection: collectionName,
+        documentId,
+        operation,
+        data
+    };
+    let failure;
+    for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+            const response = await fetch(SIRAJ_ARCHIVE_URL, {
+                method: 'POST',
+                // text/plain = simple cross-origin request; no OPTIONS setup required.
+                headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+                body: JSON.stringify(message)
+            });
+            if (!response.ok) throw new Error('Excel archive HTTP ' + response.status);
+            return;
+        } catch (error) {
+            failure = error;
+            if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 500));
+        }
+    }
+    console.warn('Firebase saved the movement, but Excel archive failed:', failure);
+    showToast('تم الحفظ في النظام، لكن تعذر إرسال نسخة Excel', 'warning');
+}
+
 const SYSTEM_SETTINGS_COLLECTION = 'system_settings';
 const SYSTEM_BALANCE_LOGS_COLLECTION = 'system_balance_logs';
 const MAX_BALANCE_LOGS = 10;
@@ -1633,10 +1667,12 @@ document.getElementById('mainForm').onsubmit = async (e) => {
 
         if (editId) {
             await updateDoc(doc(db, col, editId), data);
+            await sendMovementToExcel(col, editId, 'update', data);
             playSuccessSound();
             showToast('تم تحديث البيانات بنجاح 🔥', 'success');
         } else {
-            await addDoc(collection(db, col), data);
+            const savedMovement = await addDoc(collection(db, col), data);
+            await sendMovementToExcel(col, savedMovement.id, 'add', data);
             playSuccessSound();
             showToast('تمت إضافة السجل بنجاح ✅', 'success');
         }
