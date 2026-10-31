@@ -65,7 +65,6 @@ async function sendMovementToExcel(collectionName, documentId, operation, data) 
         }
     }
     console.warn('Firebase saved the movement, but Excel archive failed:', failure);
-    showToast('تم الحفظ في النظام، لكن تعذر إرسال نسخة Excel', 'warning');
 }
 
 const SYSTEM_SETTINGS_COLLECTION = 'system_settings';
